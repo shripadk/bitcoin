@@ -27,6 +27,10 @@
 #include <signal.h>
 #endif
 
+#if USE_RPNOTIFY
+#include "redis_notifications.h"
+#endif
+
 using namespace std;
 using namespace boost;
 
@@ -123,6 +127,9 @@ void Shutdown()
     boost::filesystem::remove(GetPidFile());
     UnregisterAllWallets();
     delete pwalletMain;
+    #if USE_RPNOTIFY
+        RedisNotifier_Cleanup();
+    #endif
 }
 
 //
@@ -250,6 +257,11 @@ std::string HelpMessage()
     strUsage += "  -rpcsslcertificatechainfile=<file.cert>  " + _("Server certificate file (default: server.cert)") + "\n";
     strUsage += "  -rpcsslprivatekeyfile=<file.pem>         " + _("Server private key (default: server.pem)") + "\n";
     strUsage += "  -rpcsslciphers=<ciphers>                 " + _("Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)") + "\n";
+
+    #if USE_RPNOTIFY
+        strUsage += " -rpnotifyhost=<host> " + _("Redis Server <host> (default: 127.0.0.1)") + "\n";
+        strUsage += " -rpnotifyport=<port> " + _("Redis Server <port> (default: 6379)") + "\n";
+    #endif
 
     return strUsage;
 }
@@ -522,6 +534,16 @@ bool AppInit2(boost::thread_group& threadGroup)
     printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
     printf("Bitcoin version %s (%s)\n", FormatFullVersion().c_str(), CLIENT_DATE.c_str());
     printf("Using OpenSSL version %s\n", SSLeay_version(SSLEAY_VERSION));
+
+    #if USE_RPNOTIFY
+        printf("Connecting to Redis instance...\n");
+        int rpnotifyport = GetArg("-rpnotifyport", 6379);
+        std::string rpnotifyhost = GetArg("-rpnotifyhost", "127.0.0.1");
+
+        RedisNotifier_Init(rpnotifyhost, rpnotifyport);
+        printf("Connected to Redis Instance: %s:%d\n", rpnotifyhost.c_str(), rpnotifyport);
+    #endif
+
     if (!fLogTimestamps)
         printf("Startup time: %s\n", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", GetTime()).c_str());
     printf("Default data directory %s\n", GetDefaultDataDir().string().c_str());

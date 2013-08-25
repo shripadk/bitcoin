@@ -21,6 +21,7 @@ LIBPATHS= \
 
 USE_UPNP:=1
 USE_IPV6:=1
+USE_RPNOTIFY:=0
 
 LIBS= -dead_strip
 
@@ -122,6 +123,12 @@ endif
 
 ifneq (${USE_IPV6}, -)
 	DEFS += -DUSE_IPV6=$(USE_IPV6)
+endif
+
+ifeq (${USE_RPNOTIFY}, 1)
+    LIBS += -l hiredis
+    DEFS += -DUSE_RPNOTIFY=${USE_RPNOTIFY}
+    OBJS += obj/redis_notifications.o
 endif
 
 all: bitcoind

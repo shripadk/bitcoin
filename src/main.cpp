@@ -16,6 +16,10 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
+#if USE_RPNOTIFY
+#include "redis_notifications.h"
+#endif
+
 using namespace std;
 using namespace boost;
 
@@ -949,6 +953,10 @@ bool CTxMemPool::accept(CValidationState &state, const CTransaction &tx, bool fL
     printf("CTxMemPool::accept() : accepted %s (poolsz %"PRIszu")\n",
            hash.ToString().c_str(),
            mapTx.size());
+
+    #if USE_RPNOTIFY
+        RedisNotifier_SendTx(tx);
+    #endif
     return true;
 }
 
@@ -2181,6 +2189,13 @@ bool SetBestChain(CValidationState &state, CBlockIndex* pindexNew)
         boost::replace_all(strCmd, "%s", hashBestChain.GetHex());
         boost::thread t(runCommand, strCmd); // thread runs free
     }
+
+    #if USE_RPNOTIFY
+        if (!fIsInitialDownload)
+        {
+            RedisNotifier_SendBlock(pindexBest);
+        }
+    #endif
 
     return true;
 }
