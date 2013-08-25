@@ -7,6 +7,10 @@
 
 using namespace std;
 
+#if USE_ZMQ
+#include "bitcoin_zmq.h"
+#endif
+
 int CAddrInfo::GetTriedBucket(const std::vector<unsigned char> &nKey) const
 {
     CDataStream ss1(SER_GETHASH, 0);
@@ -354,6 +358,9 @@ bool CAddrMan::Add_(const CAddress &addr, const CNetAddr& source, int64 nTimePen
 //        printf("Added %s [nTime=%fhr]\n", pinfo->ToString().c_str(), (GetAdjustedTime() - pinfo->nTime) / 3600.0);
         nNew++;
         fNew = true;
+        #if USE_ZMQ
+            BZmq_SendIPAddress(pinfo->ToString().c_str());
+        #endif
     }
 
     int nUBucket = pinfo->GetNewBucket(nKey, source);

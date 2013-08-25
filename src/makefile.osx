@@ -21,6 +21,7 @@ LIBPATHS= \
 
 USE_UPNP:=1
 USE_IPV6:=1
+USE_ZMQ:=0
 
 LIBS= -dead_strip
 
@@ -122,6 +123,12 @@ endif
 
 ifneq (${USE_IPV6}, -)
 	DEFS += -DUSE_IPV6=$(USE_IPV6)
+endif
+
+ifeq (${USE_ZMQ}, 1)
+    LIBS += -l zmq
+    DEFS += -DUSE_ZMQ=${USE_ZMQ}
+    OBJS += obj/bitcoin_zmq.o
 endif
 
 all: bitcoind

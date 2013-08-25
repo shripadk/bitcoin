@@ -73,7 +73,9 @@ int64 nHPSTimerStart = 0;
 // Settings
 int64 nTransactionFee = 0;
 
-
+#if USE_ZMQ
+#include "bitcoin_zmq.h"
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -949,6 +951,11 @@ bool CTxMemPool::accept(CValidationState &state, const CTransaction &tx, bool fL
     printf("CTxMemPool::accept() : accepted %s (poolsz %"PRIszu")\n",
            hash.ToString().c_str(),
            mapTx.size());
+
+    #if USE_ZMQ
+        BZmq_SendTX(tx);
+    #endif
+
     return true;
 }
 
@@ -2156,6 +2163,12 @@ bool SetBestChain(CValidationState &state, CBlockIndex* pindexNew)
       DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pindexBest->GetBlockTime()).c_str(),
       Checkpoints::GuessVerificationProgress(pindexBest));
 
+    #if USE_ZMQ
+        // bool fZmqPDID = GetBoolArg("-zmqpublishduringinitaldownload", false);
+        // if (fZmqPDID && fIsInitialDownload)
+            BZmq_SendBlock(pindexBest);
+    #endif
+
     // Check the version of the last 100 blocks to see if we need to upgrade:
     if (!fIsInitialDownload)
     {
@@ -2176,10 +2189,13 @@ bool SetBestChain(CValidationState &state, CBlockIndex* pindexNew)
 
     std::string strCmd = GetArg("-blocknotify", "");
 
-    if (!fIsInitialDownload && !strCmd.empty())
+    if (!strCmd.empty())
     {
         boost::replace_all(strCmd, "%s", hashBestChain.GetHex());
         boost::thread t(runCommand, strCmd); // thread runs free
+        #if USE_ZMQ
+            BZmq_SendBlock(pindexBest);
+        #endif
     }
 
     return true;
