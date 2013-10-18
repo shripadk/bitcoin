@@ -13,9 +13,7 @@
 static void *pBZmq_ctx = NULL;
 static void *pBZmq_socket_pub = NULL;
 static void *pBZmq_socket_rep = NULL;
-std::string strBZmq_ID_TRANSACTION = "cf954abb";
-std::string strBZmq_ID_BLOCK = "ec747b90";
-std::string strBZmq_ID_IPADDRESS = "a610612a";
+std::string strChannel = "channel:";
 bool fBZmq_ThreadReqRep = false;
 
 extern void TxToJSON(const CTransaction& tx, const uint256 hashBlock, json_spirit::Object& entry);
@@ -241,7 +239,7 @@ void BZmq_SendTX(const CTransaction tx) {
     json_spirit::Object result;
     TxToJSON(tx, 0, result);
 
-    std::string strTemp = strBZmq_ID_TRANSACTION + json_spirit::write_string(json_spirit::Value(result), false);
+    std::string strTemp = strChannel + json_spirit::write_string(json_spirit::Value(result), false);
 
     int nRc = zmq_send(pBZmq_socket_pub, strTemp.c_str(), strTemp.length(), ZMQ_DONTWAIT);
 
@@ -256,33 +254,13 @@ void BZmq_SendBlock(CBlockIndex* pblockindex) {
     ReadBlockFromDisk(block, pblockindex);
 
     json_spirit::Object result = blockToJSON(block, pblockindex);
-    std::string strTemp = strBZmq_ID_BLOCK + json_spirit::write_string(json_spirit::Value(result), false);
+    std::string strTemp = strChannel + json_spirit::write_string(json_spirit::Value(result), false);
 
     int nRc = zmq_send(pBZmq_socket_pub, strTemp.c_str(), strTemp.length(), ZMQ_DONTWAIT);
 
     printf("%s\n", "SENT BLOCK");
     if (nRc < 0)
         printf("ZMQ ERROR in BZmq_SendBlock() errno: %i strerror: %s\n", errno, strerror(errno));
-}
-
-void BZmq_SendIPAddress(const char *pszIP) {
-    std::string strIP = pszIP;
-    std::string::size_type nPortPos = strIP.rfind(":");
-    if (nPortPos != std::string::npos) 
-    {
-        std::string strIPAddress = strIP.substr(0, nPortPos);
-        std::string strTemp = strBZmq_ID_IPADDRESS;
-        strTemp.append("{\"ip\":\"");
-        strTemp.append(strIPAddress);
-        strTemp.append("\",\"port\":");
-        strTemp.append(strIP.substr(nPortPos + 1));
-        strTemp.append("}");
-
-        int nRc = zmq_send(pBZmq_socket_pub, strTemp.c_str(), strTemp.length(), ZMQ_DONTWAIT);
-
-        if (nRc < 0)
-            printf("ZMQ ERROR in BZmq_SendIpAddress() errno: %i strerror: %s\n", errno, strerror(errno));
-    }
 }
 
 void BZmq_ThreadReqRep(void *fp) {

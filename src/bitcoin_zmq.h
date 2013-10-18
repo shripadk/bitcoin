@@ -20,6 +20,5 @@ void BZmq_Shutdown();
 void BZmq_Version();
 void BZmq_SendTX(const CTransaction tx);
 void BZmq_SendBlock(CBlockIndex*);
-void BZmq_SendIPAddress(const char *);
 
 #endif
